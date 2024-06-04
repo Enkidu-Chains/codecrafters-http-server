@@ -32,12 +32,12 @@ List<Endpoint> endpoints =
                                       $"Content-Length: {match.Value.Length}\r\n" +
                                       $"\r\n" +
                                       $"{match.Value}");
-    })
+    }),
+    new Endpoint("/", HttpMethod.Get, requestBytes => Encoding.UTF8.GetBytes($"HTTP/1.1 200 OK\r\n\r\n"))
 ];
 
 Endpoint? endpoint = endpoints
-    .FirstOrDefault(
-        e => startLine[1].StartsWith(e.Path) && e.Method == HttpMethod.Parse(startLine[0]));
+    .FirstOrDefault(e => startLine[1].StartsWith(e.Path) && e.Method == HttpMethod.Parse(startLine[0]));
 
 if (endpoint is null)
 {
