@@ -9,4 +9,4 @@ var server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
 Socket socket = server.AcceptSocket(); // wait for client
 
-await socket.SendAsync("+HTTP/1.1 200 OK/r/n/r/n"u8.ToArray());
+await socket.SendAsync("HTTP/1.1 200 OK/r/n/r/n"u8.ToArray());
