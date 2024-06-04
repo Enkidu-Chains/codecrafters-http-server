@@ -22,6 +22,6 @@ string[] requestLines = request.Split("\n\r");
 
 bool validEndpoint = requestLines[0].Split(' ')[1].Equals("/");
 
-string response = validEndpoint ? "HTTP/1.1 200 OK\r\n\r\n" : "HTTP/1.1 404 NotFound\r\n\r\n";
+string response = validEndpoint ? "HTTP/1.1 200 OK\r\n\r\n" : "HTTP/1.1 404 Not Found\r\n\r\n";
 
 await socket.SendAsync(Encoding.UTF8.GetBytes(response));
