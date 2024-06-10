@@ -10,6 +10,7 @@ public class HttpResponse
         Protocol = protocol;
         StatusCode = statusCode;
         StatusText = statusText;
+        Headers = new Dictionary<string, string>();
     }
     
     public string Protocol { get; private set; }
@@ -18,13 +19,13 @@ public class HttpResponse
 
     public string StatusText { get; private set; }
 
-    public Dictionary<string, string> Headers { get; private set; }
+    public IReadOnlyDictionary<string, string> Headers { get; private set; }
 
     public string? Body { get; set; }
 
     public HttpResponse AddHeader(string key, string value)
     {
-        Headers.Add(key, value);
+        ((Dictionary<string, string>)Headers).Add(key, value);
         return this;
     }
 
