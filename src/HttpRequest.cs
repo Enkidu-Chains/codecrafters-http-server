@@ -12,7 +12,7 @@ public class HttpRequest
         string[] startLine = lines[0].Split(' ');
 
         Method = startLine[0];
-        RequestPath = startLine[1];
+        Path = startLine[1];
         Protocol = startLine[2];
         Headers = lines.Skip(1).SkipLast(2)
             .Select(line => line.Split(": "))
@@ -22,7 +22,7 @@ public class HttpRequest
 
     public string Method { get; private set; }
 
-    public string RequestPath { get; private set; }
+    public string Path { get; private set; }
     
     public string Protocol { get; private set; }
     

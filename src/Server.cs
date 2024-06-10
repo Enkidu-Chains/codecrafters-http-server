@@ -18,16 +18,25 @@ int byteReceived = await socket.ReceiveAsync(requestBytes);
 var request = new HttpRequest(requestBytes);
 HttpResponse response;
 
-if (request.RequestPath.StartsWith("/echo/"))
+if (request.Path.StartsWith("/echo/"))
 {
-    Match match = Regex.Match(request.RequestPath, @"(?<=/echo/)[^\s/]+");
+    Match match = Regex.Match(request.Path, @"(?<=/echo/)[^\s/]+");
 
     response = new HttpResponse("HTTP/1.1", 200, "OK")
         .AddHeader("Content-Type", "text/plain")
         .AddHeader("Content-Length", $"{match.Value.Length}");
     response.Body = $"{match.Value}";
 }
-else if (request.RequestPath == "/")
+else if (request.Path == "/user-agent")
+{
+    string userAgent = request.Headers["User-Agent"];
+    
+    response = new HttpResponse("HTTP/1.1", 200, "OK")
+        .AddHeader("Content-Type", "text/plain")
+        .AddHeader("Content-Length", userAgent.Length.ToString());
+    response.Body = userAgent;
+}
+else if (request.Path == "/")
 {
     response = new HttpResponse("HTTP/1.1", 200, "OK");
 }
