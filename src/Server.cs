@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using codecrafters_http_server;
 
 // You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
@@ -11,32 +12,28 @@ var server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
 Socket socket = server.AcceptSocket(); // wait for client
 
-var buffer= new byte[1024];
-await socket.ReceiveAsync(buffer);
-string request = Encoding.UTF8.GetString(buffer);
-byte[] response;
+var requestBytes = new byte[10*1024];
+int byteReceived = await socket.ReceiveAsync(requestBytes);
 
-Console.WriteLine(request);
+var request = new HttpRequest(requestBytes);
+HttpResponse response;
 
-string[] startLine = request.Split("\r\n")[0].Split(' ');
-
-if (startLine[1].StartsWith("/echo/"))
+if (request.RequestPath.StartsWith("/echo/"))
 {
-    Match match = Regex.Match(startLine[1], @"(?<=/echo/)[^\s/]+");
+    Match match = Regex.Match(request.RequestPath, @"(?<=/echo/)[^\s/]+");
 
-    response = Encoding.UTF8.GetBytes("HTTP/1.1 200 OK\r\n" +
-                                             "Content-Type: text/plain\r\n" +
-                                             $"Content-Length: {match.Value.Length}\r\n" +
-                                             "\r\n" +
-                                             $"{match.Value}");
+    response = new HttpResponse("HTTP/1.1", 200, "OK")
+        .AddHeader("Content-Type", "text/plain")
+        .AddHeader("Content-Length", $"{match.Value.Length}");
+    response.Body = $"{match.Value}";
 }
-else if (startLine[1] == "/")
+else if (request.RequestPath == "/")
 {
-    response = "HTTP/1.1 200 OK\r\n\r\n"u8.ToArray();
+    response = new HttpResponse("HTTP/1.1", 200, "OK");
 }
 else
 {
-    response = "HTTP/1.1 404 Not Found\r\n\r\n"u8.ToArray();
+    response = new HttpResponse("HTTP/1.1", 404, "Not Found");
 }
 
-await socket.SendAsync(response);
+await socket.SendAsync(response.ToBytes());
