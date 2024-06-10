@@ -13,6 +13,11 @@ server.Start();
 while (true)
 {
     Socket socket = server.AcceptSocket(); // wait for client
+    await HandleConnection(socket);
+}
+
+static async Task HandleConnection(Socket socket)
+{
     var requestBytes = new byte[10*1024];
     int byteReceived = await socket.ReceiveAsync(requestBytes);
 
@@ -46,5 +51,5 @@ while (true)
         response = new HttpResponse("HTTP/1.1", 404, "Not Found");
     }
 
-await socket.SendAsync(response.ToBytes());
+    await socket.SendAsync(response.ToBytes());
 }
