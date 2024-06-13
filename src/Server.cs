@@ -60,14 +60,12 @@ async Task HandleConnection(Socket socket)
         try
         {
             await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Open);
-
-            var memory = new Memory<byte>();
-            int readAsync = await stream.ReadAsync(memory);
+            string file = await new StreamReader(stream).ReadToEndAsync();
 
             response = new HttpResponse("HTTP/1.1", 200, "OK")
                 .AddHeader("Content-Type", "application/octet-stream")
-                .AddHeader("Content-Length", $"{memory.Length}")
-                .SetBody(memory.Span.ToString());
+                .AddHeader("Content-Length", $"{stream.Length}")
+                .SetBody(file);
 
         }
         catch (FileNotFoundException e)
