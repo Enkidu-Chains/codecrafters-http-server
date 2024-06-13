@@ -22,20 +22,15 @@ while (true)
 
 string GetFilesRoot(string[] args)
 {
-    foreach (string s in args)
-    {
-        Console.WriteLine(s);
-    }
-    
     try
     {
         int index = Array.IndexOf(args, "--directory") + 1;
-        return args[index];
+        return index == 0 ? Directory.GetCurrentDirectory() : args[index];
     }
     catch (IndexOutOfRangeException e)
     {
         Console.WriteLine("The parameter for \"--directory\" was not set properly.");
-        return args[0];
+        return Directory.GetCurrentDirectory();
     }
 }
 
