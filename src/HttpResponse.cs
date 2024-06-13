@@ -29,6 +29,12 @@ public class HttpResponse
         return this;
     }
 
+    public HttpResponse SetBody(string body)
+    {
+        Body = body;
+        return this;
+    }
+
     public byte[] ToBytes()
     {
         var responseStringBuilder = new StringBuilder($"{Protocol} {StatusCode} {StatusText}\r\n");
