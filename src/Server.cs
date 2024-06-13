@@ -66,8 +66,8 @@ async Task HandleConnection(Socket socket)
 
             response = new HttpResponse("HTTP/1.1", 200, "OK")
                 .AddHeader("Content-Type", "application/octet-stream")
-                .AddHeader("Content-Length", $"{readAsync}")
-                .SetBody(memory.ToString());
+                .AddHeader("Content-Length", $"{memory.Length}")
+                .SetBody(memory.Span.ToString());
 
         }
         catch (FileNotFoundException e)
