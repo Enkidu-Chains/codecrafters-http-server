@@ -66,7 +66,7 @@ async Task HandleConnection(Socket socket)
 
             response = new HttpResponse("HTTP/1.1", 200, "OK")
                 .AddHeader("Content-Type", "application/octet-stream")
-                .AddHeader("Content-Length", $"{stream.Length}")
+                .AddHeader("Content-Length", $"{readAsync}")
                 .SetBody(memory.ToString());
 
         }
