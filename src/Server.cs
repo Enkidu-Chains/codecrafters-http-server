@@ -22,6 +22,11 @@ while (true)
 
 string GetFilesRoot(string[] args)
 {
+    foreach (string s in args)
+    {
+        Console.WriteLine(s);
+    }
+    
     try
     {
         int index = Array.IndexOf(args, "--directory") + 1;
