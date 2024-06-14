@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Text;
 
 namespace codecrafters_http_server;
 
@@ -18,6 +19,7 @@ public class HttpRequest
             .Select(line => line.Split(": "))
             .ToDictionary(headerValue => headerValue[0], headerValue => headerValue[1]);
         Body = lines.Last();
+        // Body = Headers.TryGetValue("Content-Length", out string? lengthStr) ? lines.Last()[new Range(0, Convert.ToInt32(lengthStr))] : "";
     }
 
     public string Method { get; private set; }

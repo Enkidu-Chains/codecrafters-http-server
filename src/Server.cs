@@ -17,6 +17,7 @@ while (true)
 {
     Socket socket = await server.AcceptSocketAsync(); // wait for client
     await HandleConnection(socket);
+    await socket.DisconnectAsync(false);
 }
 
 string GetFilesRoot(string[] args)
@@ -38,7 +39,7 @@ async Task HandleConnection(Socket socket)
     var requestBytes = new byte[10*1024];
     int byteReceived = await socket.ReceiveAsync(requestBytes);
 
-    var request = new HttpRequest(requestBytes);
+    var request = new HttpRequest(requestBytes[new Range(0, byteReceived)]);
     HttpResponse response;
 
     if (request.Path.StartsWith("/echo/") && request.Method == "GET")
