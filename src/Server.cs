@@ -72,7 +72,7 @@ async Task HandleConnection(Socket socket)
             response = new HttpResponse("HTTP/1.1", 404, "Not Found");
         }
     }
-    else if (request.Path.StartsWith("/files/") && request.Method == "POST" && request.Headers["Content-Type"] == "application/octet-stream")
+    else if (request.Path.StartsWith("/files/") && request.Method == "POST")
     {
         Match match = Regex.Match(request.Path, @"(?<=/files/)[^\s/]+");
 
