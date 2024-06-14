@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Text.RegularExpressions;
 using codecrafters_http_server;
 
@@ -42,7 +41,7 @@ async Task HandleConnection(Socket socket)
     var request = new HttpRequest(requestBytes);
     HttpResponse response;
 
-    if (request.Path.StartsWith("/echo/"))
+    if (request.Path.StartsWith("/echo/") && request.Method == "GET")
     {
         Match match = Regex.Match(request.Path, @"(?<=/echo/)[^\s/]+");
 
@@ -51,7 +50,7 @@ async Task HandleConnection(Socket socket)
             .AddHeader("Content-Length", $"{match.Value.Length}");
         response.Body = $"{match.Value}";
     }
-    else if (request.Path.StartsWith("/files/"))
+    else if (request.Path.StartsWith("/files/") && request.Method == "GET")
     {
         Match match = Regex.Match(request.Path, @"(?<=/files/)[^\s/]+");
 
@@ -59,21 +58,34 @@ async Task HandleConnection(Socket socket)
 
         try
         {
-            await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Open);
-            string file = await new StreamReader(stream).ReadToEndAsync();
+            await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Open, FileAccess.Read);
+            using var reader = new StreamReader(stream);
+            string file = await reader.ReadToEndAsync();
 
             response = new HttpResponse("HTTP/1.1", 200, "OK")
                 .AddHeader("Content-Type", "application/octet-stream")
                 .AddHeader("Content-Length", $"{stream.Length}")
                 .SetBody(file);
-
         }
-        catch (FileNotFoundException e)
+        catch (FileNotFoundException)
         {
             response = new HttpResponse("HTTP/1.1", 404, "Not Found");
         }
     }
-    else if (request.Path == "/user-agent")
+    else if (request.Path.StartsWith("/files/") && request.Method == "POST" && request.Headers["Content-Type"] == "application/octet-stream")
+    {
+        Match match = Regex.Match(request.Path, @"(?<=/files/)[^\s/]+");
+
+        string fileName = match.Value;
+
+        await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Create, FileAccess.Write);
+        await using var writer = new StreamWriter(stream);
+
+        await writer.WriteAsync(request.Body);
+
+        response = new HttpResponse("HTTP/1.1", 201, "Created");
+    }
+    else if (request is { Path: "/user-agent", Method: "GET" })
     {
         string userAgent = request.Headers["User-Agent"];
         
@@ -82,7 +94,7 @@ async Task HandleConnection(Socket socket)
             .AddHeader("Content-Length", userAgent.Length.ToString())
             .SetBody(userAgent);
     }
-    else if (request.Path == "/")
+    else if (request is { Path: "/", Method: "GET" })
     {
         response = new HttpResponse("HTTP/1.1", 200, "OK");
     }
