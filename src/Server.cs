@@ -38,6 +38,11 @@ async Task HandleConnection(Socket socket)
 {
     var requestBytes = new byte[10*1024];
     int byteReceived = await socket.ReceiveAsync(requestBytes);
+    
+    if (byteReceived == 0)
+    {
+        return;
+    }
 
     var request = new HttpRequest(requestBytes[new Range(0, byteReceived)]);
     HttpResponse response;
@@ -49,6 +54,12 @@ async Task HandleConnection(Socket socket)
         response = new HttpResponse("HTTP/1.1", 200, "OK")
             .AddHeader("Content-Type", "text/plain")
             .AddHeader("Content-Length", $"{match.Value.Length}");
+
+        if (request.GetHeader("Accept-Encoding") == "gzip")
+        {
+            response.AddHeader("Content-Encoding", "gzip");
+        }
+        
         response.Body = $"{match.Value}";
     }
     else if (request.Path.StartsWith("/files/") && request.Method == "GET")
@@ -88,7 +99,7 @@ async Task HandleConnection(Socket socket)
     }
     else if (request is { Path: "/user-agent", Method: "GET" })
     {
-        string userAgent = request.Headers["User-Agent"];
+        string userAgent = request.GetHeader("User-Agent");
         
         response = new HttpResponse("HTTP/1.1", 200, "OK")
             .AddHeader("Content-Type", "text/plain")

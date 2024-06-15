@@ -17,7 +17,7 @@ public class HttpRequest
         Protocol = startLine[2];
         Headers = lines.Skip(1).SkipLast(2)
             .Select(line => line.Split(": "))
-            .ToDictionary(headerValue => headerValue[0], headerValue => headerValue[1]);
+            .ToDictionary(headerValue => headerValue[0].ToLower(), headerValue => headerValue[1]);
         Body = lines.Last();
         // Body = Headers.TryGetValue("Content-Length", out string? lengthStr) ? lines.Last()[new Range(0, Convert.ToInt32(lengthStr))] : "";
     }
@@ -31,4 +31,9 @@ public class HttpRequest
     public IReadOnlyDictionary<string, string> Headers { get; private set; }
 
     public string Body { get; private set; }
+
+    public string GetHeader(string header)
+    {
+        return Headers[header.ToLower()];
+    }
 }
