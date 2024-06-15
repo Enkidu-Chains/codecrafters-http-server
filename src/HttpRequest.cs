@@ -36,4 +36,9 @@ public class HttpRequest
     {
         return Headers[header.ToLower()];
     }
+
+    public bool TryGetHeader(string header, [NotNullWhen(true)]out string? result)
+    {
+        return Headers.TryGetValue(header.ToLower(), out result);
+    }
 }

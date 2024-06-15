@@ -55,9 +55,9 @@ async Task HandleConnection(Socket socket)
             .AddHeader("Content-Type", "text/plain")
             .AddHeader("Content-Length", $"{match.Value.Length}");
 
-        if (request.GetHeader("Accept-Encoding") == "gzip")
+        if (request.TryGetHeader("Accept-Encoding", out string? result) && result == "gzip")
         {
-            response.AddHeader("Content-Encoding", "gzip");
+            response.AddHeader("Content-Encoding", result);
         }
         
         response.Body = $"{match.Value}";
