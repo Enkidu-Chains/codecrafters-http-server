@@ -63,6 +63,9 @@ async Task HandleConnection(Socket socket)
             response.Body = await CompressString(match.Value);
             response.AddHeader("Content-Encoding", "gzip")
                 .AddHeader("Content-Length", $"{response.Body.Length}");
+            
+            Console.WriteLine(response.Body);
+            Console.WriteLine(await DecompressString(response.Body));
         }
         else
         {
