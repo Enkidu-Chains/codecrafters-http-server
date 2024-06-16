@@ -1,5 +1,4 @@
-﻿using System.Net.Sockets;
-using System.Text;
+﻿using System.Text;
 
 namespace codecrafters_http_server;
 
@@ -59,7 +58,6 @@ public class HttpResponse
 
         responseStringBuilder.Append("\r\n");
 
-        byte[] bytes = Encoding.UTF8.GetBytes(responseStringBuilder.ToString());
-        return [..bytes, ..Body];
+        return [..Encoding.UTF8.GetBytes(responseStringBuilder.ToString()), ..Body];
     }
 }

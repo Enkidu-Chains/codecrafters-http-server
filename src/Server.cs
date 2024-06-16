@@ -8,10 +8,8 @@ using codecrafters_http_server;
 string filesRoot = GetFilesRoot(args);
 Directory.CreateDirectory(filesRoot);
 
-// You can use print statements as follows for debugging, they'll be visible when running tests.
 Console.WriteLine("Logs from your program will appear here!");
 
-// Uncomment this block to pass the first stage
 var server = new TcpListener(IPAddress.Any, 4221);
 server.Start();
 
@@ -36,6 +34,18 @@ string GetFilesRoot(string[] args)
     }
 }
 
+async Task<byte[]> Compress(byte[] input)
+{
+    await using var memoryStream = new MemoryStream();
+
+    await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Compress, true);
+    await compressionStream.WriteAsync(input, 0, input.Length);
+    await compressionStream.FlushAsync();
+    compressionStream.Close();
+
+    return memoryStream.ToArray();
+}
+
 async Task HandleConnection(Socket socket)
 {
     var requestBytes = new byte[10*1024];
@@ -51,67 +61,19 @@ async Task HandleConnection(Socket socket)
 
     if (request.Path.StartsWith("/echo/") && request.Method == "GET")
     {
-        Match match = Regex.Match(request.Path, @"(?<=/echo/)[^\s/]+");
-
-        response = new HttpResponse("HTTP/1.1", 200, "OK")
-            .AddHeader("Content-Type", "text/plain")
-            .AddHeader("Content-Length", $"{match.Value.Length}");
-
-        if (request.TryGetHeader("Accept-Encoding", out string? result) &&
-            result.Split(",", StringSplitOptions.TrimEntries).Contains("gzip"))
-        {
-            response.SetBody(await Compress(Encoding.UTF8.GetBytes(match.Value)))
-                .AddHeader("Content-Encoding", "gzip")
-                .AddHeader("Content-Length", $"{response.Body.Length}");
-        }
-        else
-        {
-            response.SetBody(match.Value);
-        }
+        response = await HandleEcho(request);
     }
     else if (request.Path.StartsWith("/files/") && request.Method == "GET")
     {
-        Match match = Regex.Match(request.Path, @"(?<=/files/)[^\s/]+");
-
-        string fileName = match.Value;
-
-        try
-        {
-            await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Open, FileAccess.Read);
-            using var reader = new StreamReader(stream);
-            string file = await reader.ReadToEndAsync();
-
-            response = new HttpResponse("HTTP/1.1", 200, "OK")
-                .AddHeader("Content-Type", "application/octet-stream")
-                .AddHeader("Content-Length", $"{stream.Length}")
-                .SetBody(file);
-        }
-        catch (FileNotFoundException)
-        {
-            response = new HttpResponse("HTTP/1.1", 404, "Not Found");
-        }
+        response = await RetrieveFile(request);
     }
     else if (request.Path.StartsWith("/files/") && request.Method == "POST")
     {
-        Match match = Regex.Match(request.Path, @"(?<=/files/)[^\s/]+");
-
-        string fileName = match.Value;
-
-        await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Create, FileAccess.Write);
-        await using var writer = new StreamWriter(stream);
-
-        await writer.WriteAsync(request.Body);
-
-        response = new HttpResponse("HTTP/1.1", 201, "Created");
+        response = await SaveFile(request);
     }
     else if (request is { Path: "/user-agent", Method: "GET" })
     {
-        string userAgent = request.GetHeader("User-Agent");
-        
-        response = new HttpResponse("HTTP/1.1", 200, "OK")
-            .AddHeader("Content-Type", "text/plain")
-            .AddHeader("Content-Length", userAgent.Length.ToString())
-            .SetBody(userAgent);
+        response = GetUserAgent(request);
     }
     else if (request is { Path: "/", Method: "GET" })
     {
@@ -125,14 +87,72 @@ async Task HandleConnection(Socket socket)
     await socket.SendAsync(response.ToBytes());
 }
 
-async Task<byte[]> Compress(byte[] input)
+HttpResponse GetUserAgent(HttpRequest httpRequest)
 {
-    await using var memoryStream = new MemoryStream();
+    string userAgent = httpRequest.GetHeader("User-Agent");
+        
+    HttpResponse httpResponse = new HttpResponse("HTTP/1.1", 200, "OK")
+        .AddHeader("Content-Type", "text/plain")
+        .AddHeader("Content-Length", userAgent.Length.ToString())
+        .SetBody(userAgent);
+    return httpResponse;
+}
 
-    await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Compress, true);
-    await compressionStream.WriteAsync(input, 0, input.Length);
-    await compressionStream.FlushAsync();
-    compressionStream.Close();
+async Task<HttpResponse> SaveFile(HttpRequest httpRequest)
+{
+    Match match = Regex.Match(httpRequest.Path, @"(?<=/files/)[^\s/]+");
 
-    return memoryStream.ToArray();
+    string fileName = match.Value;
+
+    await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Create, FileAccess.Write);
+    await using var writer = new StreamWriter(stream);
+
+    await writer.WriteAsync(httpRequest.Body);
+
+    return new HttpResponse("HTTP/1.1", 201, "Created");
+}
+
+async Task<HttpResponse> RetrieveFile(HttpRequest httpRequest)
+{
+    Match match = Regex.Match(httpRequest.Path, @"(?<=/files/)[^\s/]+");
+    string fileName = match.Value;
+    
+    try
+    {
+        await using var stream = new FileStream($"{filesRoot}/{fileName}", FileMode.Open, FileAccess.Read);
+        using var reader = new StreamReader(stream);
+        string file = await reader.ReadToEndAsync();
+
+        return new HttpResponse("HTTP/1.1", 200, "OK")
+            .AddHeader("Content-Type", "application/octet-stream")
+            .AddHeader("Content-Length", $"{stream.Length}")
+            .SetBody(file);
+    }
+    catch (FileNotFoundException)
+    {
+        return new HttpResponse("HTTP/1.1", 404, "Not Found");
+    }
+}
+
+async Task<HttpResponse> HandleEcho(HttpRequest httpRequest)
+{
+    Match match = Regex.Match(httpRequest.Path, @"(?<=/echo/)[^\s/]+");
+
+    HttpResponse httpResponse = new HttpResponse("HTTP/1.1", 200, "OK")
+        .AddHeader("Content-Type", "text/plain")
+        .AddHeader("Content-Length", $"{match.Value.Length}");
+
+    if (httpRequest.TryGetHeader("Accept-Encoding", out string? result) &&
+        result.Split(",", StringSplitOptions.TrimEntries).Contains("gzip"))
+    {
+        httpResponse.SetBody(await Compress(Encoding.UTF8.GetBytes(match.Value)))
+            .AddHeader("Content-Encoding", "gzip")
+            .AddHeader("Content-Length", $"{httpResponse.Body.Length}");
+    }
+    else
+    {
+        httpResponse.SetBody(match.Value);
+    }
+
+    return httpResponse;
 }

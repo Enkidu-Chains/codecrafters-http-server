@@ -19,7 +19,6 @@ public class HttpRequest
             .Select(line => line.Split(": "))
             .ToDictionary(headerValue => headerValue[0].ToLower(), headerValue => headerValue[1]);
         Body = lines.Last();
-        // Body = Headers.TryGetValue("Content-Length", out string? lengthStr) ? lines.Last()[new Range(0, Convert.ToInt32(lengthStr))] : "";
     }
 
     public string Method { get; private set; }
