@@ -128,9 +128,6 @@ async Task HandleConnection(Socket socket)
 async Task<byte[]> Compress(byte[] input)
 {
     await using var memoryStream = new MemoryStream();
-    
-    // byte[] lengthBytes = BitConverter.GetBytes(input.Length);
-    // await memoryStream.WriteAsync(lengthBytes.AsMemory(0, 4));
 
     await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Compress, true);
     await compressionStream.WriteAsync(input, 0, input.Length);
@@ -138,19 +135,4 @@ async Task<byte[]> Compress(byte[] input)
     compressionStream.Close();
 
     return memoryStream.ToArray();
-}
-
-async Task<byte[]> Decompress(byte[] input)
-{
-    await using var memoryStream = new MemoryStream(input);
-    
-    var lengthBytes = new byte[4];
-    _ = await memoryStream.ReadAsync(lengthBytes.AsMemory(0, 4));
-
-    var length = BitConverter.ToInt32(lengthBytes, 0);
-    await using var decompressionStream = new GZipStream(memoryStream, CompressionMode.Decompress);
-
-    var result = new byte[length];
-    _ = await decompressionStream.ReadAsync(result, 0, length);
-    return result;
 }

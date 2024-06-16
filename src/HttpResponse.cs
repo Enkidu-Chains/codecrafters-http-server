@@ -21,7 +21,7 @@ public class HttpResponse
 
     public IReadOnlyDictionary<string, string> Headers { get; private set; }
 
-    public byte[] Body { get; set; }
+    public byte[] Body { get; private set; } = [];
 
     public HttpResponse AddHeader(string key, string value)
     {
