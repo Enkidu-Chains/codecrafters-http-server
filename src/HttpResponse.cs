@@ -25,7 +25,13 @@ public class HttpResponse
 
     public HttpResponse AddHeader(string key, string value)
     {
-        ((Dictionary<string, string>)Headers).Add(key, value);
+        var headers = (Dictionary<string, string>)Headers;
+
+        if (!headers.TryAdd(key, value))
+        {
+            headers[key] = value;
+        }
+        
         return this;
     }
 
