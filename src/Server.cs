@@ -129,8 +129,8 @@ async Task<byte[]> Compress(byte[] input)
 {
     await using var memoryStream = new MemoryStream();
     
-    byte[] lengthBytes = BitConverter.GetBytes(input.Length);
-    await memoryStream.WriteAsync(lengthBytes.AsMemory(0, 4));
+    // byte[] lengthBytes = BitConverter.GetBytes(input.Length);
+    // await memoryStream.WriteAsync(lengthBytes.AsMemory(0, 4));
 
     await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Compress, true);
     await compressionStream.WriteAsync(input, 0, input.Length);
