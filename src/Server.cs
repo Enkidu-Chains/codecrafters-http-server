@@ -63,8 +63,6 @@ async Task HandleConnection(Socket socket)
             response.SetBody(await Compress(Encoding.UTF8.GetBytes(match.Value)))
                 .AddHeader("Content-Encoding", "gzip")
                 .AddHeader("Content-Length", $"{response.Body.Length}");
-            
-            Console.WriteLine(response.Body);
         }
         else
         {
@@ -130,6 +128,9 @@ async Task HandleConnection(Socket socket)
 async Task<byte[]> Compress(byte[] input)
 {
     await using var memoryStream = new MemoryStream();
+    
+    byte[] lengthBytes = BitConverter.GetBytes(input.Length);
+    await memoryStream.WriteAsync(lengthBytes.AsMemory(0, 4));
 
     await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Compress, true);
     await compressionStream.WriteAsync(input, 0, input.Length);
@@ -138,9 +139,17 @@ async Task<byte[]> Compress(byte[] input)
     return memoryStream.ToArray();
 }
 
-async Task<string> CompressString(string input)
+async Task<byte[]> Decompress(byte[] input)
 {
-    byte[] encoded = Encoding.UTF8.GetBytes(input);
-    byte[] compressed = await Compress(encoded);
-    return Convert.ToBase64String(compressed);
+    await using var memoryStream = new MemoryStream(input);
+    
+    var lengthBytes = new byte[4];
+    _ = await memoryStream.ReadAsync(lengthBytes.AsMemory(0, 4));
+
+    var length = BitConverter.ToInt32(lengthBytes, 0);
+    await using var decompressionStream = new GZipStream(memoryStream, CompressionMode.Decompress);
+
+    var result = new byte[length];
+    _ = await decompressionStream.ReadAsync(result, 0, length);
+    return result;
 }
