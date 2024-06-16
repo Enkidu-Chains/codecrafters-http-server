@@ -65,7 +65,6 @@ async Task HandleConnection(Socket socket)
                 .AddHeader("Content-Length", $"{response.Body.Length}");
             
             Console.WriteLine(response.Body);
-            Console.WriteLine(await DecompressString(response.Body));
         }
         else
         {
@@ -132,9 +131,6 @@ async Task<byte[]> Compress(byte[] input)
 {
     await using var memoryStream = new MemoryStream();
 
-    byte[] lengthBytes = BitConverter.GetBytes(input.Length);
-    await memoryStream.WriteAsync(lengthBytes.AsMemory(0, 4));
-
     await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Compress);
     await compressionStream.WriteAsync(input);
     await compressionStream.FlushAsync();
@@ -147,27 +143,4 @@ async Task<string> CompressString(string input)
     byte[] encoded = Encoding.UTF8.GetBytes(input);
     byte[] compressed = await Compress(encoded);
     return Convert.ToBase64String(compressed);
-}
-
-async Task<byte[]> Decompress(byte[] input)
-{
-    await using var memoryStream = new MemoryStream(input);
-
-    var lengthBytes = new byte[4];
-    _ = await memoryStream.ReadAsync(lengthBytes.AsMemory(0, 4));
-    
-    var length = BitConverter.ToInt32(lengthBytes);
-    var result = new byte[length];
-
-    await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Decompress);
-    _ = await compressionStream.ReadAsync(result);
-
-    return result;
-}
-
-async Task<string> DecompressString(string input)
-{
-    byte[] compressed = Convert.FromBase64String(input);
-    byte[] decompressed = await Decompress(compressed);
-    return Encoding.UTF8.GetString(decompressed);
 }
