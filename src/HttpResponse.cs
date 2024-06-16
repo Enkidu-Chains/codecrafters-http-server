@@ -21,7 +21,7 @@ public class HttpResponse
 
     public IReadOnlyDictionary<string, string> Headers { get; private set; }
 
-    public string? Body { get; set; }
+    public byte[] Body { get; set; }
 
     public HttpResponse AddHeader(string key, string value)
     {
@@ -35,12 +35,19 @@ public class HttpResponse
         return this;
     }
 
-    public HttpResponse SetBody(string body)
+    public HttpResponse SetBody(byte[] body)
     {
         Body = body;
         return this;
     }
 
+
+    public HttpResponse SetBody(string body)
+    {
+        Body = Encoding.UTF8.GetBytes(body);
+        return this;
+    }
+    
     public byte[] ToBytes()
     {
         var responseStringBuilder = new StringBuilder($"{Protocol} {StatusCode} {StatusText}\r\n");
@@ -51,8 +58,13 @@ public class HttpResponse
         }
 
         responseStringBuilder.Append("\r\n");
-        responseStringBuilder.Append(Body ?? "");
 
-        return Encoding.UTF8.GetBytes(responseStringBuilder.ToString());
+        byte[] bytes = Encoding.UTF8.GetBytes(responseStringBuilder.ToString());
+
+        var fullResult = new byte[bytes.Length + Body.Length];
+        bytes.CopyTo(fullResult, 0);
+        Body.CopyTo(fullResult, bytes.Length);
+        
+        return fullResult;
     }
 }

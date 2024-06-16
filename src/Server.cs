@@ -60,15 +60,15 @@ async Task HandleConnection(Socket socket)
         if (request.TryGetHeader("Accept-Encoding", out string? result) &&
             result.Split(",", StringSplitOptions.TrimEntries).Contains("gzip"))
         {
-            response.Body = await CompressString(match.Value);
-            response.AddHeader("Content-Encoding", "gzip")
+            response.SetBody(await Compress(Encoding.UTF8.GetBytes(match.Value)))
+                .AddHeader("Content-Encoding", "gzip")
                 .AddHeader("Content-Length", $"{response.Body.Length}");
             
             Console.WriteLine(response.Body);
         }
         else
         {
-            response.Body = match.Value;
+            response.SetBody(match.Value);
         }
     }
     else if (request.Path.StartsWith("/files/") && request.Method == "GET")
@@ -132,7 +132,7 @@ async Task<byte[]> Compress(byte[] input)
     await using var memoryStream = new MemoryStream();
 
     await using var compressionStream = new GZipStream(memoryStream, CompressionMode.Compress, true);
-    await compressionStream.WriteAsync(input);
+    await compressionStream.WriteAsync(input, 0, input.Length);
     await compressionStream.FlushAsync();
 
     return memoryStream.ToArray();
