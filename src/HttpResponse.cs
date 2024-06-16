@@ -60,11 +60,6 @@ public class HttpResponse
         responseStringBuilder.Append("\r\n");
 
         byte[] bytes = Encoding.UTF8.GetBytes(responseStringBuilder.ToString());
-
-        var fullResult = new byte[bytes.Length + Body.Length];
-        bytes.CopyTo(fullResult, 0);
-        Body.CopyTo(fullResult, bytes.Length);
-        
-        return fullResult;
+        return [..bytes, ..Body];
     }
 }
